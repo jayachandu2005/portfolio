@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Github, 
@@ -273,144 +274,267 @@ const SectionHeading = ({ title, subtitle }: { title: string; subtitle?: string 
   );
 };
 
-export default function App() {
-  const [isDarkMode, setIsDarkMode] = useState(true);
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [githubRepos, setGithubRepos] = useState<Project[]>([]);
-  const [githubStats, setGithubStats] = useState<GithubStats | null>(null);
-  const [topLanguages, setTopLanguages] = useState<{name: string, count: number}[]>([]);
-  const [selectedSkill, setSelectedSkill] = useState<{subject: string, A: number} | null>(null);
-
-  useEffect(() => {
-    if (isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [isDarkMode]);
-
-  useEffect(() => {
-    const fetchGithub = async () => {
-      try {
-        const [reposRes, userRes] = await Promise.all([
-          fetch('https://api.github.com/users/jayachandu2005/repos?sort=updated&per_page=10'),
-          fetch('https://api.github.com/users/jayachandu2005')
-        ]);
-        const reposData = await reposRes.json();
-        const userData = await userRes.json();
-
-        if (Array.isArray(reposData)) {
-          const languages: {[key: string]: number} = {};
-          reposData.forEach(repo => {
-            if (repo.language) {
-              languages[repo.language] = (languages[repo.language] || 0) + 1;
-            }
-          });
-          const sortedLangs = Object.entries(languages)
-            .map(([name, count]) => ({ name, count }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 5);
-          setTopLanguages(sortedLangs);
-
-          const featuredTitles = FEATURED_PROJECTS.map(p => p.title.toLowerCase());
-          const unwantedTitles = ["cachematrix.r", "air pollution project"];
-
-          const mappedRepos = reposData
-            .filter(repo => !repo.fork && repo.name !== 'jayachandu2005')
-            .map(repo => ({
-              title: repo.name.replace(/-/g, ' ').replace(/_/g, ' '),
-              description: repo.description || "A project exploring modern technology and software engineering principles.",
-              tech: [repo.language || "Open Source"],
-              github: repo.html_url,
-              demo: repo.homepage
-            }))
-            .filter(project => {
-              const title = project.title.toLowerCase();
-              // Check if it's already in featured projects (fuzzy match)
-              const isFeatured = featuredTitles.some(ft => title.includes(ft) || ft.includes(title));
-              const isUnwanted = unwantedTitles.some(u => title.includes(u));
-              return !isFeatured && !isUnwanted;
-            });
-          setGithubRepos(mappedRepos);
-        }
-        setGithubStats(userData);
-      } catch (err) {
-        console.error("Failed to fetch GitHub data", err);
-      }
-    };
-    fetchGithub();
-  }, []);
-
-  const allProjects = [...FEATURED_PROJECTS, ...githubRepos];
-  const filteredProjects = allProjects.filter(p => 
-    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.tech.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
-
-  const navLinks = [
-    { name: 'Home', href: '#home' },
-    { name: 'About', href: '#about' },
-    { name: 'Skills', href: '#skills' },
-    { name: 'Projects', href: '#projects' },
-    { name: 'Education', href: '#education' },
-    { name: 'Contact', href: '#contact' },
-  ];
+// --- CV Page Component ---
+const CVPage = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDarkMode: (val: boolean) => void }) => {
+  const navigate = useNavigate();
 
   return (
-    <div className="min-h-screen selection:bg-primary/30">
-      {/* --- Navbar --- */}
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white selection:bg-primary/30">
+      {/* CV Navbar */}
       <nav className="fixed top-0 w-full z-50 glass border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <motion.div 
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              className="text-2xl font-black tracking-tighter"
+            <button 
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 font-bold hover:text-primary transition-colors"
             >
-              GJC<span className="text-primary">.</span>
-            </motion.div>
-
-            {/* Desktop Nav */}
-            <div className="hidden md:flex items-center space-x-8">
-              {navLinks.map((link) => (
-                <a 
-                  key={link.name} 
-                  href={link.href}
-                  className="text-sm font-semibold hover:text-primary transition-colors"
-                >
-                  {link.name}
-                </a>
-              ))}
-              <a 
-                href="#contact"
-                className="px-5 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/80 transition-all shadow-lg shadow-primary/20"
-              >
-                Hire Me
-              </a>
+              <ChevronRight className="w-5 h-5 rotate-180" /> Back to Portfolio
+            </button>
+            <div className="flex items-center gap-4">
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-            </div>
-
-            {/* Mobile Nav Toggle */}
-            <div className="md:hidden flex items-center gap-4">
               <a 
-                href="#contact"
-                className="px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold"
+                href="/General_CV.pdf"
+                download="General_CV.pdf"
+                className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/80 transition-all flex items-center gap-2"
               >
-                Hire Me
+                Download <Download className="w-4 h-4" />
               </a>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <main className="pt-32 pb-20 px-4">
+        <div className="max-w-4xl mx-auto glass rounded-[2.5rem] p-8 md:p-12 shadow-2xl relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+          
+          {/* CV Header */}
+          <header className="border-b border-slate-200 dark:border-slate-800 pb-8 mb-8 relative">
+            <h1 className="text-4xl md:text-5xl font-black mb-4">Golla Jaya Chandu</h1>
+            <div className="flex flex-wrap gap-4 text-sm font-medium text-slate-500 dark:text-slate-400">
+              <a href="mailto:jayachandugolla2005@gmail.com" className="flex items-center gap-1 hover:text-primary transition-colors">
+                <Mail className="w-4 h-4" /> jayachandugolla2005@gmail.com
+              </a>
+              <a href="https://www.linkedin.com/in/jayachandugolla/" target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+                <Linkedin className="w-4 h-4" /> jayachandugolla
+              </a>
+              <a href="https://github.com/jayachandu2005" target="_blank" rel="noreferrer" className="flex items-center gap-1 hover:text-primary transition-colors">
+                <Github className="w-4 h-4" /> jayachandu2005
+              </a>
+              <span className="flex items-center gap-1">
+                <Terminal className="w-4 h-4" /> +91 9154361970
+              </span>
+            </div>
+          </header>
+
+          {/* CV Content */}
+          <div className="space-y-10">
+            {/* Skills */}
+            <section>
+              <h2 className="text-xl font-black uppercase tracking-widest text-primary mb-4">Skills</h2>
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <h3 className="font-bold mb-2 text-slate-400 text-xs uppercase">Languages & Core</h3>
+                  <p className="text-sm leading-relaxed">SQL, C++, Data Structures and Algorithms (DSA), Python (NumPy, Pandas), UI/UX.</p>
+                </div>
+                <div>
+                  <h3 className="font-bold mb-2 text-slate-400 text-xs uppercase">Frameworks & Tools</h3>
+                  <p className="text-sm leading-relaxed">Power BI, Tableau, Excel, Figma, MySQL, Docker, VSCode.</p>
+                </div>
+              </div>
+            </section>
+
+            {/* Projects */}
+            <section>
+              <h2 className="text-xl font-black uppercase tracking-widest text-secondary mb-4">Projects</h2>
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-lg">Loan Eligibility Prediction</h3>
+                    <span className="text-xs font-bold text-slate-500">Dec' 25</span>
+                  </div>
+                  <p className="text-xs font-bold text-primary mb-2">Python, Machine Learning, Predictive Analysis</p>
+                  <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                    <li>Preprocessed loan datasets using Pandas and scikit-learn.</li>
+                    <li>Built a classification model to predict loan approval.</li>
+                    <li>Performed data analysis and visualization to identify key factors.</li>
+                  </ul>
+                </div>
+                <div>
+                  <div className="flex justify-between items-start mb-2">
+                    <h3 className="font-bold text-lg">Sustainable Fashion Analysis</h3>
+                    <span className="text-xs font-bold text-slate-500">Oct' 25</span>
+                  </div>
+                  <p className="text-xs font-bold text-secondary mb-2">Python, Data Analysis, K-Means</p>
+                  <ul className="list-disc list-inside text-sm text-slate-600 dark:text-slate-400 space-y-1">
+                    <li>Performed EDA on sustainable fashion datasets.</li>
+                    <li>Applied K-Means clustering to group fashion brands.</li>
+                    <li>Generated insights through cluster profiling.</li>
+                  </ul>
+                </div>
+              </div>
+            </section>
+
+            {/* Education */}
+            <section>
+              <h2 className="text-xl font-black uppercase tracking-widest text-accent mb-4">Education</h2>
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-bold text-lg">Lovely Professional University</h3>
+                    <span className="text-xs font-bold text-slate-500">2023 - Present</span>
+                  </div>
+                  <p className="text-sm">B.Tech in Computer Science and Engineering</p>
+                  <p className="text-xs font-bold text-accent">CGPA: 6.13</p>
+                </div>
+                <div>
+                  <div className="flex justify-between items-start mb-1">
+                    <h3 className="font-bold text-lg">Sri Chaitanya Techno School</h3>
+                    <span className="text-xs font-bold text-slate-500">2021 - 2023</span>
+                  </div>
+                  <p className="text-sm">Intermediate (PCM)</p>
+                  <p className="text-xs font-bold text-accent">Percentage: 65%</p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <footer className="mt-16 pt-8 border-t border-slate-200 dark:border-slate-800 text-center">
+            <p className="text-xs text-slate-500 italic">"Technology is best when it brings people together."</p>
+          </footer>
+        </div>
+      </main>
+    </div>
+  );
+};
+
+// --- Portfolio Component ---
+const Portfolio = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDarkMode: (val: boolean) => void }) => {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [githubRepos, setGithubRepos] = useState<any[]>([]);
+  const [githubStats, setGithubStats] = useState<GithubStats | null>(null);
+  const [topLanguages, setTopLanguages] = useState<{ name: string; count: number }[]>([]);
+  const [selectedSkill, setSelectedSkill] = useState<any>(null);
+
+  useEffect(() => {
+    const fetchGithubData = async () => {
+      try {
+        const [userRes, reposRes] = await Promise.all([
+          fetch('https://api.github.com/users/jayachandu2005'),
+          fetch('https://api.github.com/users/jayachandu2005/repos?sort=updated&per_page=100')
+        ]);
+        
+        if (userRes.ok) {
+          const userData = await userRes.json();
+          setGithubStats({
+            public_repos: userData.public_repos,
+            followers: userData.followers,
+            following: userData.following,
+            created_at: userData.created_at
+          });
+        }
+
+        if (reposRes.ok) {
+          const reposData = await reposRes.json();
+          setGithubRepos(reposData);
+          
+          const langs: { [key: string]: number } = {};
+          reposData.forEach((repo: any) => {
+            if (repo.language) {
+              langs[repo.language] = (langs[repo.language] || 0) + 1;
+            }
+          });
+          
+          const sortedLangs = Object.entries(langs)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+          
+          setTopLanguages(sortedLangs);
+        }
+      } catch (error) {
+        console.error("Error fetching GitHub data:", error);
+      }
+    };
+
+    fetchGithubData();
+  }, []);
+
+  const filteredProjects = FEATURED_PROJECTS.filter(p => 
+    p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    p.tech.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
+  const navLinks = [
+    { name: 'About', href: '#about' },
+    { name: 'Skills', href: '#skills' },
+    { name: 'Projects', href: '#projects' },
+    { name: 'UI/UX', href: '#uiux' },
+    { name: 'Education', href: '#education' },
+    { name: 'Contact', href: '#contact' }
+  ];
+
+  return (
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white selection:bg-primary/30 transition-colors duration-500">
+      {/* --- Navbar --- */}
+      <nav className="fixed top-0 w-full z-50 glass border-b border-slate-200 dark:border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between h-20 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-2xl font-black tracking-tighter flex items-center gap-2"
+            >
+              <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
+                G
+              </div>
+              <span>Jaya<span className="text-primary">.</span></span>
+            </motion.div>
+
+            {/* Desktop Nav */}
+            <div className="hidden md:flex items-center gap-8">
+              {navLinks.map((link) => (
+                <a 
+                  key={link.name} 
+                  href={link.href}
+                  className="text-sm font-bold hover:text-primary transition-colors relative group"
+                >
+                  {link.name}
+                  <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all group-hover:w-full" />
+                </a>
+              ))}
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
-                className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800"
+                className="p-3 glass rounded-xl hover:bg-slate-200 dark:hover:bg-slate-800 transition-all"
               >
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
-              <button onClick={() => setIsMenuOpen(!isMenuOpen)}>
+              <Link 
+                to="/cv"
+                className="px-6 py-3 bg-primary text-white rounded-xl text-sm font-bold shadow-lg shadow-primary/20 hover:bg-primary/80 transition-all active:scale-95"
+              >
+                CV
+              </Link>
+            </div>
+
+            {/* Mobile Toggle */}
+            <div className="md:hidden flex items-center gap-4">
+              <button 
+                onClick={() => setIsDarkMode(!isDarkMode)}
+                className="p-2 glass rounded-lg"
+              >
+                {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </button>
+              <button 
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="p-2 glass rounded-lg text-primary"
+              >
                 {isMenuOpen ? <X /> : <Menu />}
               </button>
             </div>
@@ -424,28 +548,26 @@ export default function App() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="md:hidden glass border-t border-slate-200 dark:border-slate-800"
+              className="md:hidden glass border-t border-slate-200 dark:border-slate-800 overflow-hidden"
             >
-              <div className="px-4 pt-2 pb-6 space-y-1">
+              <div className="px-4 py-6 space-y-4">
                 {navLinks.map((link) => (
                   <a 
                     key={link.name} 
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-4 text-base font-bold hover:bg-primary/10 rounded-xl transition-colors"
+                    className="block text-lg font-bold hover:text-primary transition-colors"
                   >
                     {link.name}
                   </a>
                 ))}
-                <div className="pt-4 px-3">
-                  <a 
-                    href="#contact"
-                    onClick={() => setIsMenuOpen(false)}
-                    className="block w-full py-4 bg-primary text-white text-center rounded-xl font-bold shadow-lg shadow-primary/20"
-                  >
-                    Hire Me
-                  </a>
-                </div>
+                <Link 
+                  to="/cv"
+                  onClick={() => setIsMenuOpen(false)}
+                  className="block w-full py-4 bg-primary text-white text-center rounded-xl font-bold"
+                >
+                  CV
+                </Link>
               </div>
             </motion.div>
           )}
@@ -453,60 +575,113 @@ export default function App() {
       </nav>
 
       {/* --- Hero Section --- */}
-      <section id="home" className="relative pt-32 pb-20 md:pt-48 md:pb-32 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full -z-10">
-          <div className="absolute top-0 left-1/4 w-64 h-64 bg-primary/20 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl animate-pulse delay-700" />
+      <section className="relative min-h-screen flex items-center pt-20 overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-[120px] animate-pulse delay-1000" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <span className="inline-block py-1 px-4 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-widest mb-6">
-              Welcome to my portfolio
-            </span>
-            <h1 className="text-5xl md:text-8xl font-black tracking-tight mb-6">
-              I'm Golla Jaya <span className="text-gradient">Chandu</span>
-            </h1>
-            <div className="text-xl md:text-3xl font-medium text-slate-600 dark:text-slate-400 mb-10 h-12">
-              <TypingAnimation />
-            </div>
-            
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <motion.a 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                href="#projects" 
-                className="px-8 py-4 bg-primary text-white rounded-2xl font-bold shadow-lg shadow-primary/30 flex items-center justify-center gap-2"
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+            >
+              <div className="inline-flex items-center gap-2 px-4 py-2 glass rounded-full text-primary text-sm font-bold mb-6">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+                </span>
+                Available for Freelance & Internships
+              </div>
+              <h1 className="text-5xl md:text-8xl font-black tracking-tighter mb-6 leading-[0.9]">
+                Golla Jaya <br />
+                <span className="text-gradient">Chandu</span>
+              </h1>
+              <div className="text-xl md:text-2xl text-slate-500 dark:text-slate-400 mb-10 font-medium">
+                I am a <TypingAnimation />
+              </div>
+              
+              <div className="flex flex-wrap gap-4">
+                <a 
+                  href="#contact" 
+                  className="px-8 py-4 bg-primary text-white rounded-2xl font-bold text-lg shadow-xl shadow-primary/20 hover:bg-primary/90 transition-all hover:-translate-y-1 active:scale-95"
+                >
+                  Hire Me
+                </a>
+                <Link 
+                  to="/cv"
+                  className="px-8 py-4 glass rounded-2xl font-bold text-lg hover:bg-slate-200 dark:hover:bg-slate-800 transition-all hover:-translate-y-1 active:scale-95 flex items-center gap-2"
+                >
+                  View CV <ChevronRight className="w-5 h-5" />
+                </Link>
+              </div>
+
+              <div className="mt-12 flex items-center gap-6">
+                <div className="flex -space-x-4">
+                  {[1, 2, 3].map(i => (
+                    <div key={i} className="w-12 h-12 rounded-full border-4 border-slate-50 dark:border-slate-950 overflow-hidden">
+                      <img src={`https://picsum.photos/seed/${i+10}/100/100`} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                    </div>
+                  ))}
+                </div>
+                <div className="text-sm">
+                  <p className="font-bold">15+ Projects Completed</p>
+                  <p className="text-slate-500">Across ML, Data & Design</p>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
+              animate={{ opacity: 1, scale: 1, rotate: 0 }}
+              transition={{ duration: 1, ease: "easeOut" }}
+              className="relative hidden lg:block"
+            >
+              <div className="relative z-10 glass p-4 rounded-[3.5rem] border-slate-200 dark:border-slate-700">
+                <img 
+                  src={`https://picsum.photos/seed/jayachandu/800/1000`} 
+                  alt="Golla Jaya Chandu" 
+                  className="rounded-[3rem] shadow-2xl"
+                  referrerPolicy="no-referrer"
+                />
+              </div>
+              {/* Floating Cards */}
+              <motion.div 
+                animate={{ y: [0, -20, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+                className="absolute -top-10 -right-10 p-6 glass rounded-3xl shadow-2xl z-20 border-slate-200 dark:border-slate-700"
               >
-                View Projects <ArrowUpRight className="w-5 h-5" />
-              </motion.a>
-              <motion.a 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                href="#contact" 
-                className="px-8 py-4 glass rounded-2xl font-bold flex items-center justify-center gap-2"
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-yellow-500/20 rounded-xl">
+                    <Award className="w-6 h-6 text-yellow-500" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Achievements</p>
+                    <p className="font-bold">3★ HackerRank</p>
+                  </div>
+                </div>
+              </motion.div>
+              <motion.div 
+                animate={{ y: [0, 20, 0] }}
+                transition={{ duration: 5, repeat: Infinity }}
+                className="absolute -bottom-10 -left-10 p-6 glass rounded-3xl shadow-2xl z-20 border-slate-200 dark:border-slate-700"
               >
-                Hire Me <Mail className="w-5 h-5" />
-              </motion.a>
-              <motion.a 
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                href="/Golla_Jaya_Chandu_CV.txt"
-                download="Golla_Jaya_Chandu_CV.txt"
-                className="px-8 py-4 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-2xl font-bold flex items-center justify-center gap-2"
-              >
-                CV <Download className="w-5 h-5" />
-              </motion.a>
-            </div>
-          </motion.div>
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-primary/20 rounded-xl">
+                    <Database className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-500 uppercase">Expertise</p>
+                    <p className="font-bold">Data Analysis</p>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          </div>
         </div>
       </section>
-
-      {/* --- About Section --- */}
       <section id="about" className="py-20 bg-slate-100/50 dark:bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 gap-12 items-center">
@@ -917,7 +1092,12 @@ export default function App() {
               <div>
                 <SectionHeading title="Certifications" />
                 <div className="space-y-4">
-                  <div className="p-6 glass rounded-2xl flex items-center justify-between group">
+                  <a 
+                    href="https://drive.google.com/file/d/1lSuM_K9ia-cktzFdoDvN4COOFLP0UHUO/view" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="p-6 glass rounded-2xl flex items-center justify-between group cursor-pointer hover:border-primary/50 transition-all"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-blue-500/20 rounded-xl">
                         <BookOpen className="w-6 h-6 text-blue-500" />
@@ -928,8 +1108,13 @@ export default function App() {
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
-                  </div>
-                  <div className="p-6 glass rounded-2xl flex items-center justify-between group">
+                  </a>
+                  <a 
+                    href="https://drive.google.com/file/d/1qM_YjKbkAgegeSfDbV3RjMcLhYRwTu_A/view" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="p-6 glass rounded-2xl flex items-center justify-between group cursor-pointer hover:border-primary/50 transition-all"
+                  >
                     <div className="flex items-center gap-4">
                       <div className="p-3 bg-purple-500/20 rounded-xl">
                         <Layout className="w-6 h-6 text-purple-500" />
@@ -940,7 +1125,7 @@ export default function App() {
                       </div>
                     </div>
                     <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-primary transition-colors" />
-                  </div>
+                  </a>
                 </div>
               </div>
             </div>
@@ -1198,5 +1383,26 @@ export default function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  const [isDarkMode, setIsDarkMode] = useState(true);
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
+
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Portfolio isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+        <Route path="/cv" element={<CVPage isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />} />
+      </Routes>
+    </BrowserRouter>
   );
 }
