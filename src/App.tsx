@@ -86,20 +86,6 @@ const FEATURED_PROJECTS: Project[] = [
     tech: ["Python", "Scikit-learn", "Pandas", "Matplotlib"],
     github: "https://github.com/jayachandu2005",
     featured: true
-  },
-  {
-    title: "Sustainable Fashion Brand Analysis",
-    description: "EDA and K-Means clustering to segment fashion brands based on sustainability metrics and environmental impact.",
-    tech: ["Python", "Pandas", "NumPy", "K-Means"],
-    github: "https://github.com/jayachandu2005",
-    featured: true
-  },
-  {
-    title: "Car Price Prediction",
-    description: "Regression modeling to predict vehicle pricing based on feature importance visualization and historical data.",
-    tech: ["Python", "Regression", "Seaborn", "EDA"],
-    github: "https://github.com/jayachandu2005",
-    featured: true
   }
 ];
 
@@ -211,8 +197,15 @@ const ProjectCard: React.FC<ProjectCardProps> = ({ project }) => {
     >
       <div className="p-6 flex-1">
         <div className="flex justify-between items-start mb-4">
-          <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-xl">
-            <Terminal className="w-6 h-6 text-primary" />
+          <div className="flex items-center gap-3">
+            <div className="p-3 bg-primary/10 dark:bg-primary/20 rounded-xl">
+              <Terminal className="w-6 h-6 text-primary" />
+            </div>
+            {!project.featured && (
+              <span className="px-2 py-1 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold rounded-md uppercase tracking-tighter text-slate-500">
+                GitHub
+              </span>
+            )}
           </div>
           <div className="flex gap-2">
             {project.github && (
@@ -466,7 +459,34 @@ const Portfolio = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDa
     fetchGithubData();
   }, []);
 
-  const filteredProjects = FEATURED_PROJECTS.filter(p => 
+  const mappedGithubProjects: Project[] = githubRepos
+    .filter(repo => !repo.fork) // Filter out forks
+    .map(repo => ({
+      title: repo.name.replace(/-/g, ' ').replace(/_/g, ' '),
+      description: repo.description || "A project hosted on GitHub.",
+      tech: repo.language ? [repo.language] : [],
+      github: repo.html_url,
+      featured: false
+    }))
+    .filter(repo => {
+      const normalizedTitle = repo.title.toLowerCase().trim();
+      const excludedProjects = ["cachematrix.r", "air pollution project", "car price prediction", "sustainable fashion brand analysis"];
+      
+      // Check if it's in the exclusion list
+      if (excludedProjects.includes(normalizedTitle)) return false;
+      
+      // Check if it's already in FEATURED_PROJECTS (deduplication)
+      const isDuplicate = FEATURED_PROJECTS.some(p => 
+        p.title.toLowerCase().trim() === normalizedTitle ||
+        p.title.toLowerCase().trim().replace(/\s/g, '') === normalizedTitle.replace(/\s/g, '')
+      );
+      
+      return !isDuplicate;
+    });
+
+  const allProjects = [...FEATURED_PROJECTS, ...mappedGithubProjects];
+
+  const filteredProjects = allProjects.filter(p => 
     p.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     p.tech.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()))
   );
