@@ -22,7 +22,12 @@ import {
   BrainCircuit,
   BarChart3,
   CheckCircle2,
-  ArrowUpRight
+  ArrowUpRight,
+  GitCommit,
+  GitPullRequest,
+  GitBranch,
+  Star,
+  Zap
 } from 'lucide-react';
 import { 
   Radar, 
@@ -30,7 +35,17 @@ import {
   PolarGrid, 
   PolarAngleAxis, 
   PolarRadiusAxis, 
-  ResponsiveContainer 
+  ResponsiveContainer,
+  Tooltip,
+  PieChart,
+  Pie,
+  Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  AreaChart,
+  Area
 } from 'recharts';
 import { useInView } from 'react-intersection-observer';
 import { cn } from './lib/utils';
@@ -264,6 +279,8 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [githubRepos, setGithubRepos] = useState<Project[]>([]);
   const [githubStats, setGithubStats] = useState<GithubStats | null>(null);
+  const [topLanguages, setTopLanguages] = useState<{name: string, count: number}[]>([]);
+  const [selectedSkill, setSelectedSkill] = useState<{subject: string, A: number} | null>(null);
 
   useEffect(() => {
     if (isDarkMode) {
@@ -284,11 +301,23 @@ export default function App() {
         const userData = await userRes.json();
 
         if (Array.isArray(reposData)) {
+          const languages: {[key: string]: number} = {};
+          reposData.forEach(repo => {
+            if (repo.language) {
+              languages[repo.language] = (languages[repo.language] || 0) + 1;
+            }
+          });
+          const sortedLangs = Object.entries(languages)
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 5);
+          setTopLanguages(sortedLangs);
+
           const featuredTitles = FEATURED_PROJECTS.map(p => p.title.toLowerCase());
           const unwantedTitles = ["cachematrix.r", "air pollution project"];
 
           const mappedRepos = reposData
-            .filter(repo => !repo.fork)
+            .filter(repo => !repo.fork && repo.name !== 'jayachandu2005')
             .map(repo => ({
               title: repo.name.replace(/-/g, ' ').replace(/_/g, ' '),
               description: repo.description || "A project exploring modern technology and software engineering principles.",
@@ -298,8 +327,10 @@ export default function App() {
             }))
             .filter(project => {
               const title = project.title.toLowerCase();
-              return !featuredTitles.includes(title) && 
-                     !unwantedTitles.some(u => title.includes(u));
+              // Check if it's already in featured projects (fuzzy match)
+              const isFeatured = featuredTitles.some(ft => title.includes(ft) || ft.includes(title));
+              const isUnwanted = unwantedTitles.some(u => title.includes(u));
+              return !isFeatured && !isUnwanted;
             });
           setGithubRepos(mappedRepos);
         }
@@ -351,6 +382,12 @@ export default function App() {
                   {link.name}
                 </a>
               ))}
+              <a 
+                href="#contact"
+                className="px-5 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/80 transition-all shadow-lg shadow-primary/20"
+              >
+                Hire Me
+              </a>
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
@@ -361,6 +398,12 @@ export default function App() {
 
             {/* Mobile Nav Toggle */}
             <div className="md:hidden flex items-center gap-4">
+              <a 
+                href="#contact"
+                className="px-4 py-1.5 bg-primary text-white rounded-lg text-xs font-bold"
+              >
+                Hire Me
+              </a>
               <button 
                 onClick={() => setIsDarkMode(!isDarkMode)}
                 className="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-800"
@@ -389,11 +432,20 @@ export default function App() {
                     key={link.name} 
                     href={link.href}
                     onClick={() => setIsMenuOpen(false)}
-                    className="block px-3 py-4 text-base font-bold hover:bg-primary/10 rounded-xl"
+                    className="block px-3 py-4 text-base font-bold hover:bg-primary/10 rounded-xl transition-colors"
                   >
                     {link.name}
                   </a>
                 ))}
+                <div className="pt-4 px-3">
+                  <a 
+                    href="#contact"
+                    onClick={() => setIsMenuOpen(false)}
+                    className="block w-full py-4 bg-primary text-white text-center rounded-xl font-bold shadow-lg shadow-primary/20"
+                  >
+                    Hire Me
+                  </a>
+                </div>
               </div>
             </motion.div>
           )}
@@ -438,7 +490,7 @@ export default function App() {
                 href="#contact" 
                 className="px-8 py-4 glass rounded-2xl font-bold flex items-center justify-center gap-2"
               >
-                Contact Me <Mail className="w-5 h-5" />
+                Hire Me <Mail className="w-5 h-5" />
               </motion.a>
               <motion.a 
                 whileHover={{ scale: 1.05 }}
@@ -580,7 +632,7 @@ export default function App() {
                     name="Tableau" 
                     level={80} 
                     info="Advanced data storytelling and visual analytics for complex datasets."
-                    iconUrl="https://cdn.jsdelivr.net/gh/devicons/devicon/icons/tableau/tableau-original.svg"
+                    iconUrl="https://www.vectorlogo.zone/logos/tableau/tableau-icon.svg"
                   />
                   <DetailedSkillCard 
                     name="Figma" 
@@ -611,22 +663,62 @@ export default function App() {
               </div>
             </div>
 
-            <div className="h-[400px] md:h-[500px] glass rounded-3xl p-6">
+            <div className="h-[400px] md:h-[500px] glass rounded-3xl p-6 relative group">
               <h3 className="text-center font-bold mb-4 text-slate-500 uppercase tracking-widest text-xs">Skill Radar Visualization</h3>
+              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 pointer-events-none z-10 text-center">
+                <AnimatePresence mode="wait">
+                  {selectedSkill && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.5 }}
+                      className="bg-primary/90 text-white px-4 py-2 rounded-full shadow-xl backdrop-blur-sm"
+                    >
+                      <p className="text-xs font-bold uppercase tracking-tighter">{selectedSkill.subject}</p>
+                      <p className="text-2xl font-black">{selectedSkill.A}%</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
               <ResponsiveContainer width="100%" height="100%">
-                <RadarChart cx="50%" cy="50%" outerRadius="80%" data={SKILLS_DATA}>
+                <RadarChart 
+                  cx="50%" 
+                  cy="50%" 
+                  outerRadius="80%" 
+                  data={SKILLS_DATA}
+                  onClick={(data: any) => {
+                    if (data && data.activePayload && data.activePayload[0]) {
+                      setSelectedSkill(data.activePayload[0].payload);
+                    }
+                  }}
+                >
                   <PolarGrid stroke="#94a3b8" strokeOpacity={0.2} />
                   <PolarAngleAxis dataKey="subject" tick={{ fill: '#94a3b8', fontSize: 12 }} />
                   <PolarRadiusAxis angle={30} domain={[0, 100]} tick={false} axisLine={false} />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'rgba(15, 23, 42, 0.9)', 
+                      borderRadius: '12px', 
+                      border: 'none', 
+                      color: '#fff',
+                      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
+                    }}
+                    itemStyle={{ color: '#3b82f6' }}
+                    cursor={false}
+                  />
                   <Radar
                     name="Skill"
                     dataKey="A"
                     stroke="#3b82f6"
                     fill="#3b82f6"
                     fillOpacity={0.6}
+                    animationDuration={1500}
+                    animationBegin={200}
+                    activeDot={{ r: 8, fill: '#fff', stroke: '#3b82f6', strokeWidth: 2 }}
                   />
                 </RadarChart>
               </ResponsiveContainer>
+              <p className="text-[10px] text-center text-slate-400 mt-2 italic">Click on a point to see the exact percentage</p>
             </div>
           </div>
         </div>
@@ -861,46 +953,148 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeading title="GitHub Activity" subtitle="Real-time statistics from my open-source contributions." />
           
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="md:col-span-2 glass rounded-3xl p-8 overflow-hidden">
-              <h3 className="font-bold mb-6 flex items-center gap-2">
-                <Github className="w-5 h-5" /> Contribution Heatmap
-              </h3>
-              <div className="w-full overflow-x-auto">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            {/* Main Stats */}
+            <div className="md:col-span-2 glass rounded-[2.5rem] p-8 flex flex-col justify-between group hover:border-primary/30 transition-all">
+              <div>
+                <div className="flex justify-between items-start mb-8">
+                  <div className="p-4 bg-primary/10 rounded-2xl">
+                    <Github className="w-8 h-8 text-primary" />
+                  </div>
+                  <a 
+                    href="https://github.com/jayachandu2005" 
+                    target="_blank" 
+                    rel="noreferrer"
+                    className="p-3 glass rounded-xl hover:bg-primary hover:text-white transition-all"
+                  >
+                    <ArrowUpRight className="w-5 h-5" />
+                  </a>
+                </div>
+                <h3 className="text-3xl font-black mb-2">jayachandu2005</h3>
+                <p className="text-slate-500 dark:text-slate-400 mb-8">Passionate about data science and open source.</p>
+              </div>
+              
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center p-4 glass rounded-2xl">
+                  <p className="text-2xl font-black text-primary">{githubStats?.public_repos || 0}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Repos</p>
+                </div>
+                <div className="text-center p-4 glass rounded-2xl">
+                  <p className="text-2xl font-black text-secondary">{githubStats?.followers || 0}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Followers</p>
+                </div>
+                <div className="text-center p-4 glass rounded-2xl">
+                  <p className="text-2xl font-black text-accent">{githubStats?.following || 0}</p>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500">Following</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Contribution Activity - Area Chart (Mock) */}
+            <div className="md:col-span-2 glass rounded-[2.5rem] p-8 flex flex-col group hover:border-secondary/30 transition-all">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-secondary" /> Activity Trend
+                </h3>
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Last 30 Days</span>
+              </div>
+              <div className="flex-1 h-[150px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={[
+                    { day: 1, commits: 2 }, { day: 5, commits: 5 }, { day: 10, commits: 3 },
+                    { day: 15, commits: 8 }, { day: 20, commits: 4 }, { day: 25, commits: 10 },
+                    { day: 30, commits: 6 }
+                  ]}>
+                    <defs>
+                      <linearGradient id="colorCommits" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none' }}
+                      itemStyle={{ color: '#10b981' }}
+                    />
+                    <Area 
+                      type="monotone" 
+                      dataKey="commits" 
+                      stroke="#10b981" 
+                      fillOpacity={1} 
+                      fill="url(#colorCommits)" 
+                      strokeWidth={3}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="mt-6 p-4 glass rounded-2xl overflow-hidden relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-secondary/10 to-transparent pointer-events-none" />
                 <img 
                   src={`https://ghchart.rshah.org/jayachandu2005`} 
                   alt="GitHub Contributions" 
-                  className="min-w-[600px] w-full"
+                  className="w-full opacity-80 group-hover:opacity-100 transition-opacity dark:invert scale-110"
                   referrerPolicy="no-referrer"
                 />
               </div>
             </div>
 
-            <div className="glass rounded-3xl p-8 flex flex-col justify-center">
-              <h3 className="font-bold mb-8 text-center">Repository Stats</h3>
-              <div className="space-y-6">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">Total Repos</span>
-                  <span className="text-2xl font-black">{githubStats?.public_repos || 0}</span>
+            {/* Language Distribution - Pie Chart */}
+            <div className="md:col-span-2 glass rounded-[2.5rem] p-8 group hover:border-accent/30 transition-all">
+              <h3 className="font-bold mb-6 flex items-center gap-2">
+                <Code2 className="w-5 h-5 text-accent" /> Language Mix
+              </h3>
+              <div className="h-[200px] flex items-center">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={topLanguages}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="count"
+                    >
+                      {topLanguages.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'][index % 5]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: 'none' }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div className="space-y-2 ml-4">
+                  {topLanguages.map((lang, idx) => (
+                    <div key={lang.name} className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full" style={{ backgroundColor: ['#3b82f6', '#10b981', '#8b5cf6', '#f59e0b', '#ef4444'][idx % 5] }} />
+                      <span className="text-xs font-bold text-slate-500">{lang.name}</span>
+                    </div>
+                  ))}
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">Followers</span>
-                  <span className="text-2xl font-black">{githubStats?.followers || 0}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500 font-medium">Following</span>
-                  <span className="text-2xl font-black">{githubStats?.following || 0}</span>
-                </div>
-                <div className="pt-6 border-t border-slate-200 dark:border-slate-800">
-                  <a 
-                    href="https://github.com/jayachandu2005" 
-                    target="_blank" 
-                    rel="noreferrer"
-                    className="w-full py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold flex items-center justify-center gap-2"
-                  >
-                    Follow on GitHub <ArrowUpRight className="w-4 h-4" />
-                  </a>
-                </div>
+              </div>
+            </div>
+
+            {/* Recent Activity Mock / Stats */}
+            <div className="md:col-span-2 glass rounded-[2.5rem] p-8 grid grid-cols-2 gap-4">
+              <div className="p-6 glass rounded-3xl flex flex-col justify-center items-center text-center hover:bg-primary/5 transition-colors">
+                <GitCommit className="w-8 h-8 text-primary mb-3" />
+                <p className="text-xl font-black">250+</p>
+                <p className="text-xs font-bold text-slate-500 uppercase">Commits</p>
+              </div>
+              <div className="p-6 glass rounded-3xl flex flex-col justify-center items-center text-center hover:bg-secondary/5 transition-colors">
+                <GitPullRequest className="w-8 h-8 text-secondary mb-3" />
+                <p className="text-xl font-black">12</p>
+                <p className="text-xs font-bold text-slate-500 uppercase">PRs</p>
+              </div>
+              <div className="p-6 glass rounded-3xl flex flex-col justify-center items-center text-center hover:bg-accent/5 transition-colors">
+                <Star className="w-8 h-8 text-accent mb-3" />
+                <p className="text-xl font-black">45</p>
+                <p className="text-xs font-bold text-slate-500 uppercase">Stars</p>
+              </div>
+              <div className="p-6 glass rounded-3xl flex flex-col justify-center items-center text-center hover:bg-primary/5 transition-colors">
+                <GitBranch className="w-8 h-8 text-primary mb-3" />
+                <p className="text-xl font-black">8</p>
+                <p className="text-xs font-bold text-slate-500 uppercase">Forks</p>
               </div>
             </div>
           </div>
