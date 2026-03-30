@@ -713,7 +713,7 @@ const Portfolio = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDa
             >
               <div className="aspect-square rounded-3xl overflow-hidden glass p-2">
                 <img 
-                  src={`https://picsum.photos/seed/jayachandu/800/800`} 
+                  src={`image1.jpg`} 
                   alt="Golla Jaya Chandu" 
                   className="w-full h-full object-cover rounded-2xl"
                   referrerPolicy="no-referrer"
