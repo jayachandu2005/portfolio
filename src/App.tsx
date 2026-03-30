@@ -661,7 +661,7 @@ const Portfolio = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDa
             >
               <div className="relative z-10 glass p-4 rounded-[3.5rem] border-slate-200 dark:border-slate-700">
                 <img 
-                  src={`https://picsum.photos/seed/jayachandu/800/1000`} 
+                  src={`SAVE_20231106_215623.png`} 
                   alt="Golla Jaya Chandu" 
                   className="rounded-[3rem] shadow-2xl"
                   referrerPolicy="no-referrer"
