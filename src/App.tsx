@@ -514,7 +514,7 @@ const Portfolio = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDa
               <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center text-white shadow-lg shadow-primary/20">
                 G
               </div>
-              <span>Jaya<span className="text-primary">.</span></span>
+              <span>Jc<span className="text-primary">.</span></span>
             </motion.div>
 
             {/* Desktop Nav */}
