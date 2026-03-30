@@ -1023,7 +1023,7 @@ const Portfolio = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDa
             >
               <div className="glass p-4 rounded-[3rem] border-slate-200 dark:border-slate-700">
                 <img 
-                  src="https://picsum.photos/seed/mindmitra/600/1200" 
+                  src="image.png" 
                   alt="MindMitra UI" 
                   className="rounded-[2.5rem] shadow-2xl"
                   referrerPolicy="no-referrer"
