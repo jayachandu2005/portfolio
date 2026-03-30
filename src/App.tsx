@@ -291,8 +291,8 @@ const CVPage = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDarkM
                 {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
               </button>
               <a 
-                href="/General_CV.pdf"
-                download="General_CV.pdf"
+                href="/General CV.pdf"
+                download="General CV.pdf"
                 className="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/80 transition-all flex items-center gap-2"
               >
                 Download <Download className="w-4 h-4" />
