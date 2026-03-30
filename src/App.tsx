@@ -642,7 +642,7 @@ const Portfolio = ({ isDarkMode, setIsDarkMode }: { isDarkMode: boolean; setIsDa
                 <div className="flex -space-x-4">
                   {[1, 2, 3].map(i => (
                     <div key={i} className="w-12 h-12 rounded-full border-4 border-slate-50 dark:border-slate-950 overflow-hidden">
-                      <img src={`https://www.repsol.com/content/dam/repsol-corporate/es/energia-e-innovacion/data%20science%20qu%C3%A9%20es_.jpg.transform/rp-rendition-md/image.jpg`} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                      <img src={'image1.jpg'} alt="User" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                     </div>
                   ))}
                 </div>
